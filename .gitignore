@@ -1,0 +1,5 @@
+*.py
+my_track
+*.o
+~
+data
