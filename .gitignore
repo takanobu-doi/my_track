@@ -1,5 +1,13 @@
+<<<<<<< HEAD
 *~
 *.o
 data
 *.py
 my_track
+=======
+*.py
+my_track
+*.o
+~
+data
+>>>>>>> single-thread
