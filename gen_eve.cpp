@@ -26,6 +26,8 @@ gen_eve::gen_eve(std::string BEAM_NAME, std::string TARGET_NAME, std::vector<std
       A = 2;
     }else if(particle_name=="t"){
       A = 3;
+    }else if(particle_name=="n"){
+      A = 1;
     }else{
       A = 0;
     }
@@ -43,6 +45,8 @@ gen_eve::gen_eve(std::string BEAM_NAME, std::string TARGET_NAME, std::vector<std
       A = 2;
     }else if(particle_name=="t"){
       A = 3;
+    }else if(particle_name=="n"){
+      A = 1;
     }else{
       A = 0;
     }
@@ -61,6 +65,8 @@ gen_eve::gen_eve(std::string BEAM_NAME, std::string TARGET_NAME, std::vector<std
 	A = 2;
       }else if(particle_name=="t"){
 	A = 3;
+      }else if(particle_name=="n"){
+	A = 1;
       }else{
 	A = 0;
       }

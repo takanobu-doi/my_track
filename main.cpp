@@ -9,7 +9,7 @@
 #include "mktrack.hpp"
 
 int check_cmd(int argc, char *argv[], std::vector<std::string> reaction, unsigned int &event_num, std::string &fname, int &scatter, int &pressure);
-void show_progress(int &sum_num, unsigned int event_num);
+void show_progress(int &sum_num, unsigned int event_num, int &status);
 
 int main(int argc, char *argv[]){
 
@@ -70,7 +70,7 @@ int main(int argc, char *argv[]){
   int sum_num = 0;
   int tot_num;
   int event_num_temp = event_num;
-  int ii = 0;
+  int status = 0;
 //  for(int ii=0;ii<ths.size();ii++){
   for(auto itr=ths.begin();itr!=ths.end();++itr){
 //    std::cerr << ii << std::endl;
@@ -82,7 +82,7 @@ int main(int argc, char *argv[]){
     }
 
     // generate events by multi threads
-    *itr = std::thread([&mtx, &flush_out, &tot_out, &idealvalue_out, &teachervalue_out, &exist_ideal, &exist_teacher, &sum_num, &ii](int scatter, int pressure, int tot_num){
+    *itr = std::thread([&mtx, &flush_out, &tot_out, &idealvalue_out, &teachervalue_out, &exist_ideal, &exist_teacher, &sum_num, &status](int scatter, int pressure, int tot_num){
 //	std::string fname_2 = "temp_tot_"+std::to_string(ii++)+".dat";
 //	std::ofstream tot_out_2(datdir+fname_2);
 	mtx.lock();
@@ -90,9 +90,10 @@ int main(int argc, char *argv[]){
 	mtx.unlock();
 	for(int num=0;num<tot_num;){
 	  // generate event & get picutres
-	  while(MAIKo.Generate()==0){}
+	  while(MAIKo.Generate(status)==0){}
 	  
 	  mtx.lock();
+	  status = 3;
 //	  std::cout << num << std::endl;
 	  exist_ideal = MAIKo.ShowIdealValues(idealvalue_out, exist_ideal);
 	  exist_teacher = MAIKo.ShowTeacherValues(teachervalue_out, exist_teacher);
@@ -114,13 +115,13 @@ int main(int argc, char *argv[]){
 	  num++;
 	  sum_num++;
 	  mtx.unlock();
+	  status = 0;
 //	  tot_out_2.close();
 	}
       }, scatter, pressure, tot_num);
   }
   std::cout << "\e[?25l" << std::flush; // disappear cursol
-  
-  show_progress(sum_num, event_num);
+  show_progress(sum_num, event_num, status);
       
   for(unsigned int ii=0;ii<ths.size();ii++){
     ths[ii].join();
@@ -142,7 +143,7 @@ int check_cmd(int argc, char *argv[], std::vector<std::string> reaction, unsigne
     std::cout << "-n, --number: number to generate" << std::endl;
     std::cout << "-f, --file: filename" << std::endl;
     std::cout << "-p, --pressure: pressure" << std::endl;
-    std::cout << "-s, --scatter: select pattern (below)" << std::endl;
+    std::cout << "-s, --scatter: select pattern" << std::endl;
     std::cout << "-l, --list: show scattering pattern" << std::endl;
     return 0;
   }else{
@@ -226,7 +227,7 @@ int check_cmd(int argc, char *argv[], std::vector<std::string> reaction, unsigne
   return 1;
 }
 
-void show_progress(int &sum_num, unsigned int event_num)
+void show_progress(int &sum_num, unsigned int event_num, int &status)
 {
   double percent;
   unsigned int max_chr = 50;
@@ -238,6 +239,26 @@ void show_progress(int &sum_num, unsigned int event_num)
   
   while(percent!=100){
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
+    std::cout << "Status: ";
+    switch(status){
+    case 0:
+      std::cout << "ready to generate track" << std::endl;
+      break;
+    case 1:
+      std::cout << "generating event" << std::endl;
+      break;
+    case 2:
+      std::cout << "generating track" << std::endl;
+      break;
+    case 3:
+      std::cout << "outputing to file" << std::endl;
+      break;
+    default:
+      std::cout << "unknown" << std::endl;
+      break;
+    }
+
     progress = "";
     percent = (sum_num*100)/(double)event_num;
     for(unsigned int ii=0;ii<(sum_num*max_chr)/event_num;ii++){
@@ -282,8 +303,8 @@ void show_progress(int &sum_num, unsigned int event_num)
       std::cout << std::endl;
       break;
     }
-    
-    std::cout << "\r";
+    std::cout << std::endl;
+    std::cout << "\r" << "\e[2A" << std::flush;
   }
   return;
 }

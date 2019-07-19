@@ -36,8 +36,8 @@ public:
   double GetFlush(int, int, int);
   int GetTOT(int, int, int);
   int DefineDetector();
-  int Generate();
-  int GenTrack(TrackSrim*, TLorentzVector, double[3], double[3][2]);
+  int Generate(int&);
+  int GenTrack(TrackSrim*, TLorentzVector, double[3], double[3][2], int);
   void ClearBuffer();
   void AddRawWave(double [], double, int);
   void ShowSrim();
@@ -62,6 +62,7 @@ private:
   std::string beam_name;
   std::vector<std::string> target_name;
   std::vector<std::vector<std::string>> particle_name;
+  std::vector<std::vector<bool>> particle_flag;
   std::string srim_name;
   std::string dirname;
   int event_id;

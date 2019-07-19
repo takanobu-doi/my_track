@@ -35,7 +35,8 @@ void mktrack::SetParameters(int Event_id, int Pressure)
 		 "12C",
 		 "12C",
 		 "16O",
-		 "16O"};
+		 "16O"
+  };
   particle_name = {{"10C", "4He"},
 		   {"10C", "12C"},
 		   {"10C", "16O"},
@@ -45,6 +46,16 @@ void mktrack::SetParameters(int Event_id, int Pressure)
 		   {"10C", "11C", "n"},
 		   {"10C", "15N", "p"},
 		   {"10C", "15O", "n"}
+  };
+  particle_flag = {{false, true}, // true for stoped particles
+		   {false, true},
+		   {false, true},
+		   {false, true, false},
+		   {false, true, false},
+		   {false, true, false},
+		   {false, true, false},
+		   {false, true, false},
+		   {false, true, false}
   };
   srim_name = "_HeCO2_96_4_";
   dirname = "table/";
@@ -141,8 +152,6 @@ mktrack::mktrack(int Event_id, int Pressure)
   for(int ii=0;ii<2;ii++){
     flush.push_back(clk);
   }
-
-  std::cout << &flush << std::endl;
 }
 
 mktrack::~mktrack()
@@ -222,6 +231,10 @@ int mktrack::SetSrimFile()
   srim_beam->DisableLongitudinalStraggling();
 
   for(auto it=(*(particle_name.begin()+event_id)).begin();it!=(*(particle_name.begin()+event_id)).end();++it){
+    if(*it=="n"){
+      srim_particle.push_back(nullptr);
+      continue;
+    }
     srimfname = dirname+(*it)+"_HeCO2_96_4_"+std::to_string(pressure)+".srim";
     srim_particle.push_back(new TrackSrim());
     (*(srim_particle.end()-1))->SetSensor(sensor);
@@ -276,6 +289,10 @@ int mktrack::SetRangeFile()
 {
   std::string rangefname;
   for(auto it=(*(particle_name.begin()+event_id)).begin();it!=(*(particle_name.begin()+event_id)).end();++it){
+    if((*it)=="n"){
+      EnetoRange.push_back(nullptr);
+      continue;
+    }
     rangefname = dirname+(*it)+"_"+std::to_string(pressure)+"_ene_to_range.dat";
 //    std::cout << "Loading rangefile: " << rangefname << std::endl;
     std::ifstream ifile(rangefname);
@@ -349,10 +366,11 @@ std::vector<std::string> mktrack::GetParticleName()
   return *(particle_name.begin()+event_id);
 }
 
-int mktrack::Generate()
+int mktrack::Generate(int &status)
 {
   ClearBuffer();
- 
+
+  status = 1;
   event->Generate();
 
   vtx[0] = rndm->Gaus(VTX_X_MEAN, VTX_X_SIGMA);
@@ -369,34 +387,42 @@ int mktrack::Generate()
 //  }
 
   // judge if particle is stopped inside
-  for(unsigned int i=1;i<event->GetParticleNumber();i++){
-    double r = EnetoRange[i]->Eval((event->GetParticleVector(i).E()-event->GetParticleVector(i).M())*1000.);
-    double dr = TMath::Sqrt(event->GetParticleVector(i).Px()*event->GetParticleVector(i).Px()+
-			    event->GetParticleVector(i).Py()*event->GetParticleVector(i).Py()+
-			    event->GetParticleVector(i).Pz()*event->GetParticleVector(i).Pz());
-    double dx[3] = {event->GetParticleVector(i).Px()/dr,
-		    event->GetParticleVector(i).Py()/dr,
-		    event->GetParticleVector(i).Pz()/dr};
+  for(unsigned int i_particle=1;i_particle<event->GetParticleNumber();i_particle++){
+    if(EnetoRange[i_particle]==nullptr){
+      continue;
+    }
+    double r = EnetoRange[i_particle]->Eval((event->GetParticleVector(i_particle).E()-
+					     event->GetParticleVector(i_particle).M())*1000.);
+    double dr = TMath::Sqrt(event->GetParticleVector(i_particle).Px()*event->GetParticleVector(i_particle).Px()+
+			    event->GetParticleVector(i_particle).Py()*event->GetParticleVector(i_particle).Py()+
+			    event->GetParticleVector(i_particle).Pz()*event->GetParticleVector(i_particle).Pz());
+    double dx[3] = {event->GetParticleVector(i_particle).Px()/dr,
+		    event->GetParticleVector(i_particle).Py()/dr,
+		    event->GetParticleVector(i_particle).Pz()/dr};
 
-    if(r*dx[0]+vtx[0]<area[0][0] || r*dx[0]+vtx[0]>area[0][1] ||
-       r*dx[1]+vtx[1]<area[1][0] || r*dx[1]+vtx[1]>area[1][1] ||
-       r*dx[2]+vtx[2]<area[2][0] || r*dx[2]+vtx[2]>area[2][1]){
+    if(particle_flag[event_id][i_particle] && (r*dx[0]+vtx[0]<area[0][0] || r*dx[0]+vtx[0]>area[0][1] ||
+					       r*dx[1]+vtx[1]<area[1][0] || r*dx[1]+vtx[1]>area[1][1] ||
+					       r*dx[2]+vtx[2]<area[2][0] || r*dx[2]+vtx[2]>area[2][1])){
       return 0;
     }
   }
 
+  status = 2;
   // beam track
-  GenTrack(srim_beam, event->GetBeamVector(), start_point, beam_area);
+  GenTrack(srim_beam, event->GetBeamVector(), start_point, beam_area, -1);
   point.clear();
   range.clear();
 
   // other particles track
   for(unsigned int i_particle=0;i_particle<event->GetParticleNumber();i_particle++){
-    if(GenTrack(srim_particle[i_particle], event->GetParticleVector(i_particle), vtx, area)==0){
+    if(srim_particle[i_particle]==nullptr){
+      continue;
+    }
+    if(GenTrack(srim_particle[i_particle], event->GetParticleVector(i_particle), vtx, area, i_particle)==0){
       if(i_particle==0){
 	point.clear();
 	range.clear();
-      }else if(i_particle==1){
+      }else if(particle_flag[event_id][i_particle]){
 	return 0;
       }else{
 	continue;
@@ -411,7 +437,7 @@ int mktrack::Generate()
   return 1;
 }
 
-int mktrack::GenTrack(TrackSrim *srim, TLorentzVector particle_vec, double VTX[3], double sensed_area[3][2])
+int mktrack::GenTrack(TrackSrim *srim, TLorentzVector particle_vec, double VTX[3], double sensed_area[3][2], int i_particle)
 {
   srim->SetKineticEnergy((particle_vec.E()-particle_vec.M())*1.e9); // [GeV] -> [eV]
 
@@ -496,7 +522,11 @@ int mktrack::GenTrack(TrackSrim *srim, TLorentzVector particle_vec, double VTX[3
 
   } // end of while(srim...
 
-  if(first_flag == 1){
+  if(i_particle == -1){
+    return 0;
+  }else if(!particle_flag[event_id][i_particle]){
+    return 0;
+  }else if(first_flag == 1){
     return 0;
   }
   temp_point.push_back(sca_a);
