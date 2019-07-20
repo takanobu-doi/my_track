@@ -1,5 +1,6 @@
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <string>
 #include <map>
 #include <thread>
@@ -51,18 +52,22 @@ int main(int argc, char *argv[]){
   int exist_ideal = 0;
   int exist_teacher = 0;
 
-//  size_t mp = std::thread::hardware_concurrency();
-//  if(mp==0){
-//    mp = 1;
-//  }else{
-//    mp = (size_t)(mp-2);
-//    if(mp>event_num){
-//      mp = event_num;
-//    }
-//  }
-  size_t mp = 1;
+  size_t mp = std::thread::hardware_concurrency();
+  if(mp==0){
+    mp = 1;
+  }else{
+    mp = (size_t)(mp-2);
+    if(mp>event_num){
+      mp = event_num;
+    }
+  }
+//  size_t mp = 1;
 
   std::vector<std::thread> ths(mp);
+  std::vector<std::stringstream> flush_string(mp);
+  std::vector<std::stringstream> tot_string(mp);
+  std::vector<std::stringstream> idealvalue_string(mp);
+  std::vector<std::stringstream> teachervalue_string(mp);
 
 //  std::cout << ths.size() << std::endl;
   
@@ -71,6 +76,7 @@ int main(int argc, char *argv[]){
   int tot_num;
   int event_num_temp = event_num;
   int status = 0;
+  int i = 0;
 //  for(int ii=0;ii<ths.size();ii++){
   for(auto itr=ths.begin();itr!=ths.end();++itr){
 //    std::cerr << ii << std::endl;
@@ -82,7 +88,7 @@ int main(int argc, char *argv[]){
     }
 
     // generate events by multi threads
-    *itr = std::thread([&mtx, &flush_out, &tot_out, &idealvalue_out, &teachervalue_out, &exist_ideal, &exist_teacher, &sum_num, &status](int scatter, int pressure, int tot_num){
+    *itr = std::thread([&mtx, &exist_ideal, &exist_teacher, &sum_num, &status](int scatter, int pressure, int tot_num, std::stringstream &flush_out, std::stringstream &tot_out, std::stringstream &idealvalue_out, std::stringstream &teachervalue_out){
 //	std::string fname_2 = "temp_tot_"+std::to_string(ii++)+".dat";
 //	std::ofstream tot_out_2(datdir+fname_2);
 	mtx.lock();
@@ -95,9 +101,10 @@ int main(int argc, char *argv[]){
 	  mtx.lock();
 	  status = 3;
 //	  std::cout << num << std::endl;
-	  exist_ideal = MAIKo.ShowIdealValues(idealvalue_out, exist_ideal);
-	  exist_teacher = MAIKo.ShowTeacherValues(teachervalue_out, exist_teacher);
-	  
+//	  exist_ideal = MAIKo.ShowIdealValues(idealvalue_out, exist_ideal);
+//	  exist_teacher = MAIKo.ShowTeacherValues(teachervalue_out, exist_teacher);
+	  MAIKo.ShowIdealValues(idealvalue_out, 1);
+	  MAIKo.ShowTeacherValues(teachervalue_out, 1);
 	  // output event
 	  for(int ii=0;ii<2;ii++){
 	    for(int jj=0;jj<1024;jj++){
@@ -118,17 +125,24 @@ int main(int argc, char *argv[]){
 	  status = 0;
 //	  tot_out_2.close();
 	}
-      }, scatter, pressure, tot_num);
+      }, scatter, pressure, tot_num, std::ref(flush_string[i]), std::ref(tot_string[i]), std::ref(idealvalue_string[i]), std::ref(teachervalue_string[i]));
+    i++
   }
   std::cout << "\e[?25l" << std::flush; // disappear cursol
   show_progress(sum_num, event_num, status);
       
   for(unsigned int ii=0;ii<ths.size();ii++){
     ths[ii].join();
+    flush_out << flush_string[ii] << std::flush;
+    tot_out << tot_string[ii] << std::flush;
+    idealvalue_out << idealvalue_string[ii] << std::flush;
+    teachervalue_out << teachervalue_string[ii] << std::flush;
   }
   
   flush_out.close();
   tot_out.close();
+  idealvalue_out.close();
+  teachervalue_out.close();
 
   std::cout << "Generated " << sum_num << " events." << std::endl;
   std::cout << "\e[?25h" << std::flush; // appear cursol
