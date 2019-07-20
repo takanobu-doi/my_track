@@ -121,6 +121,7 @@ int main(int argc, char *argv[]){
       }, scatter, pressure, tot_num);
   }
   std::cout << "\e[?25l" << std::flush; // disappear cursol
+  std::cout << "Reaction: " << reaction[scatter] << std::endl;
   show_progress(sum_num, event_num, status);
       
   for(unsigned int ii=0;ii<ths.size();ii++){

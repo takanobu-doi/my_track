@@ -10,4 +10,5 @@ my_track
 *.o
 ~
 data
+mixture
 >>>>>>> single-thread
