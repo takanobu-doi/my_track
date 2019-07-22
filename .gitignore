@@ -10,4 +10,7 @@ my_track
 *.o
 ~
 data
+*eps
+*.npy
+__pycache__
 >>>>>>> single-thread
