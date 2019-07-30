@@ -105,7 +105,7 @@ void mktrack::SetParameters(int Event_id, int Pressure)
   beam_area[1][1] = 140.;
   beam_area[2][1] = 150.;
   gain = 1000.; // default is 1000.
-  ie_step = 50; // default is 100
+  ie_step = 10; // default is 100
 
   cmTomm = 10.;
   mmTocm = 0.1;
@@ -136,6 +136,10 @@ mktrack::mktrack(int Event_id, int Pressure)
   }
   if(SetRangeFile()==0){
     std::cerr << "Cannot open rangefile" << std::endl;
+    exit(0);
+  }
+  if(SetDriftFile()==0){
+    std::cerr << "Cannot set driftfile" << std::endl;
     exit(0);
   }
   
@@ -294,7 +298,6 @@ int mktrack::SetRangeFile()
       continue;
     }
     rangefname = dirname+(*it)+"_"+std::to_string(pressure)+"_ene_to_range.dat";
-//    std::cout << "Loading rangefile: " << rangefname << std::endl;
     std::ifstream ifile(rangefname);
     if(ifile.fail()){
       std::cerr << "There is not " << rangefname << std::endl;
@@ -303,11 +306,10 @@ int mktrack::SetRangeFile()
     std::vector<double> e;
     std::vector<double> r;
     std::string str;
-    std::stringstream stream;
     double e_temp;
     double r_temp;
     while(getline(ifile, str)){
-      stream.clear();
+      std::stringstream stream;
       stream << str;
       stream >> e_temp >> r_temp;
       e.push_back(e_temp);
@@ -316,6 +318,50 @@ int mktrack::SetRangeFile()
     EnetoRange_temp.push_back(new TGraph(e.size(), e.data(), r.data()));
     EnetoRange.push_back(new TSpline5("EnetoRange", *(EnetoRange_temp.end()-1)));
   }
+  return 1;
+}
+
+int mktrack::SetDriftFile()
+{
+  std::vector<double> efields, bfields, angles;
+  gas->GetFieldGrid(efields, bfields, angles);
+  double velocity[efields.size()];
+  double diff_t[efields.size()];
+  double diff_l[efields.size()];
+  double town_a[efields.size()];
+  double attach[efields.size()];
+
+  unsigned int i=0;
+  for(i=0;i<efields.size();i++){
+    gas->GetElectronVelocityE(i, 0, 0, velocity[i]);
+    gas->GetElectronTransverseDiffusion(i, 0, 0, diff_t[i]);
+    gas->GetElectronLongitudinalDiffusion(i, 0, 0, diff_l[i]);
+    gas->GetElectronTownsend(i, 0, 0, town_a[i]);
+    gas->GetElectronAttachment(i, 0, 0, attach[i]);
+
+    velocity[i] = velocity[i]*1000;
+    diff_t[i] = diff_t[i]*10000;
+    diff_l[i] = diff_l[i]*10000;
+    if(town_a[i]<0){
+      town_a[i] = 0;
+    }
+    if(attach[i]<0){
+      attach[i] = 0;
+    }
+  }
+
+  if(i==0){
+    return 0;
+  }
+
+  TGraph gr_driftv(efields.size(), efields.data(), velocity);
+  TGraph gr_diff_tra(efields.size(), efields.data(), diff_t);
+  TGraph gr_diff_long(efields.size(), efields.data(), diff_l);
+
+  driftv = gr_driftv.Eval(E_FIELD)*0.1;
+  diff_tra = gr_diff_tra.Eval(E_FIELD);
+  diff_long = gr_diff_long.Eval(E_FIELD);
+
   return 1;
 }
 
@@ -468,12 +514,10 @@ int mktrack::GenTrack(TrackSrim *srim, TLorentzVector particle_vec, double VTX[3
        cluster_pos[3]<sensed_area[2][0]*mmTocm || cluster_pos[3]>sensed_area[2][1]*mmTocm){
       return 0;
     }
-
     n_cluster++;
     tot_ne+=ne;
-
     
-    int drift_status;
+//    int drift_status;
     int add_ele;
     int ie = 0;
 
@@ -488,11 +532,13 @@ int mktrack::GenTrack(TrackSrim *srim, TLorentzVector particle_vec, double VTX[3
       if(drift->AvalancheElectron(cluster_pos[1], cluster_pos[2], cluster_pos[3], cluster_pos[0])){
 	int ne_sub = drift->GetNumberOfElectronEndpoints();
 	for(int ie_sub=0;ie_sub<ne_sub;ie_sub++){
-	  drift->GetElectronEndpoint(ie_sub,
-				     cluster_pos[1], cluster_pos[2], cluster_pos[3], cluster_pos[0],
-				     ele_end_pos[1], ele_end_pos[2], ele_end_pos[3], ele_end_pos[0],
-				     drift_status);
-	  if(ele_end_pos[2]<0 && drift_status==-5){
+//	  drift->GetElectronEndpoint(ie_sub,
+//				     cluster_pos[1], cluster_pos[2], cluster_pos[3], cluster_pos[0],
+//				     ele_end_pos[1], ele_end_pos[2], ele_end_pos[3], ele_end_pos[0],
+//				     drift_status);
+	  ElectronDrift(cluster_pos[1], cluster_pos[2], cluster_pos[3], cluster_pos[0],
+			ele_end_pos[1], ele_end_pos[2], ele_end_pos[3], ele_end_pos[0]);
+//	  if(ele_end_pos[2]<0 && drift_status==-5){
 	    drift_time = (ele_end_pos[0]-cluster_pos[0]);
 	    AddRawWave(ele_end_pos, drift_time, add_ele);
 	    if(first_flag){
@@ -502,21 +548,10 @@ int mktrack::GenTrack(TrackSrim *srim, TLorentzVector particle_vec, double VTX[3
 	    } // end of if(first...
 	    end_a = std::vector<int>{(int)(cluster_pos[3]*cmTomm/0.4), (int)(drift_time/10.)};
 	    end_c = std::vector<int>{(int)(cluster_pos[1]*cmTomm/0.4), (int)(drift_time/10.)};
-	  } // end of if(ele_e...
+//	  } // end of if(ele_e...
 	} // end of for(int ie_sub...
       } // end of if(drift->Ava...
 
-//      if(drift->DriftElectron(cluster_pos[1], cluster_pos[2], cluster_pos[3], cluster_pos[0])){
-//	for(int i_drift=0;i_drift<drift->GetNumberOfDriftLinePoints();i_drift++){
-//	  drift->GetDriftLinePoint(i_drift, ele_end_pos[1], ele_end_pos[2], ele_end_pos[3], ele_end_pos[0]);
-//	  if(ele_end_pos[2]<1.e-7){
-//	    drift_time = ele_end_pos[0]-cluster_pos[0];
-//	    AddRawWave(ele_end_pos, drift_time, add_ele);
-//          break;
-//	  } // end of if(ele_end...
-//	} // end of for(int i_dri...
-//      } // end of if(drift->Dri...
-      
       ie+=add_ele;
     } // end of while(ne...
 
@@ -665,4 +700,24 @@ int mktrack::ShowTeacherValues(std::ostream& os, int exist)
   os << std::endl;
   
   return 1;
+}
+
+void mktrack::ElectronDrift(double cluster_pos1, double cluster_pos2, double cluster_pos3, double cluster_pos0,
+			double &ele_end_pos1, double &ele_end_pos2, double &ele_end_pos3, double &ele_end_pos0)
+{
+  double umTocm = 0.0001;
+
+  double drift_len = cluster_pos2;
+  double sigma_tra = diff_tra*sqrt(drift_len)*umTocm;
+  double sigma_long = diff_long*sqrt(drift_len)*umTocm;
+
+  ele_end_pos0 = (drift_len+rndm->Gaus(0, sigma_long))/driftv*100.0;
+  if(ele_end_pos0<0){
+    ele_end_pos0 = 0;
+  }
+  ele_end_pos1 = cluster_pos1+rndm->Gaus(0, sigma_tra);
+  ele_end_pos2 = 0;
+  ele_end_pos3 = cluster_pos3+rndm->Gaus(0, sigma_tra);
+  
+  return;
 }

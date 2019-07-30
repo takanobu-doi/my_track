@@ -31,6 +31,7 @@ public:
   int SetSrimFile();
   int SetWaveFile();
   int SetRangeFile();
+  int SetDriftFile();
   void SetParameters(int, int);
   std::vector<std::string> GetParticleName();
   double GetFlush(int, int, int);
@@ -43,6 +44,7 @@ public:
   void ShowSrim();
   int ShowIdealValues(std::ostream&, int);
   int ShowTeacherValues(std::ostream&, int);
+  void ElectronDrift(double, double, double, double, double&, double&, double&, double&);
 private:
   MediumMagboltz *gas = nullptr;
   GeometrySimple *geo = nullptr;
@@ -112,6 +114,11 @@ private:
 
   std::vector<std::vector<std::vector<int>>> point;
   std::vector<double> range;
+
+  //*** dirft paraeters ***//
+  double driftv;
+  double diff_long;
+  double diff_tra;
 };
 
 #endif
