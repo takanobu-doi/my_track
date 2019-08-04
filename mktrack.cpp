@@ -78,9 +78,9 @@ void mktrack::SetParameters(int Event_id, int Pressure)
   Charge_CO2 = 22.;
   Charge_He = 2.;
   density = (1.1647e-4)*pressure/500.;
-  Cluster_Size = 50; // default is 30
+  Cluster_Size = 20; // default is 30
   Beam_Cluster_Size = 1;
-  Particle_Cluster_Size = 100;
+  Particle_Cluster_Size = 20;
   // detector parameters
   center[0] = 10.24/2;
   center[1] = 14./2;
@@ -105,11 +105,11 @@ void mktrack::SetParameters(int Event_id, int Pressure)
   beam_area[1][1] = 140.;
   beam_area[2][1] = 150.;
   gain = 1000.; // default is 1000.
-  ie_step = 10; // default is 100
+  ie_step = 1; // default is 100
 
   cmTomm = 10.;
   mmTocm = 0.1;
-  threshold = 1.0; // default is 1.0
+  threshold = 1.; // default is 1.0
   return;
 }
 
@@ -333,15 +333,12 @@ int mktrack::SetDriftFile()
 
   unsigned int i=0;
   for(i=0;i<efields.size();i++){
-    gas->GetElectronVelocityE(i, 0, 0, velocity[i]);
-    gas->GetElectronTransverseDiffusion(i, 0, 0, diff_t[i]);
-    gas->GetElectronLongitudinalDiffusion(i, 0, 0, diff_l[i]);
+    gas->GetElectronVelocityE(i, 0, 0, velocity[i]); // cm/ns
+    gas->GetElectronTransverseDiffusion(i, 0, 0, diff_t[i]); // sqrt(cm)
+    gas->GetElectronLongitudinalDiffusion(i, 0, 0, diff_l[i]); // sqrt(cm)
     gas->GetElectronTownsend(i, 0, 0, town_a[i]);
     gas->GetElectronAttachment(i, 0, 0, attach[i]);
 
-    velocity[i] = velocity[i]*1000;
-    diff_t[i] = diff_t[i]*10000;
-    diff_l[i] = diff_l[i]*10000;
     if(town_a[i]<0){
       town_a[i] = 0;
     }
@@ -358,7 +355,7 @@ int mktrack::SetDriftFile()
   TGraph gr_diff_tra(efields.size(), efields.data(), diff_t);
   TGraph gr_diff_long(efields.size(), efields.data(), diff_l);
 
-  driftv = gr_driftv.Eval(E_FIELD)*0.1;
+  driftv = gr_driftv.Eval(E_FIELD);
   diff_tra = gr_diff_tra.Eval(E_FIELD);
   diff_long = gr_diff_long.Eval(E_FIELD);
 
@@ -529,8 +526,9 @@ int mktrack::GenTrack(TrackSrim *srim, TLorentzVector particle_vec, double VTX[3
 	add_ele = ie_step;
       }
       
-      if(drift->AvalancheElectron(cluster_pos[1], cluster_pos[2], cluster_pos[3], cluster_pos[0])){
-	int ne_sub = drift->GetNumberOfElectronEndpoints();
+//      if(drift->AvalancheElectron(cluster_pos[1], cluster_pos[2], cluster_pos[3], cluster_pos[0])){
+//	int ne_sub = drift->GetNumberOfElectronEndpoints();
+      int ne_sub = 1;
 	for(int ie_sub=0;ie_sub<ne_sub;ie_sub++){
 //	  drift->GetElectronEndpoint(ie_sub,
 //				     cluster_pos[1], cluster_pos[2], cluster_pos[3], cluster_pos[0],
@@ -550,7 +548,7 @@ int mktrack::GenTrack(TrackSrim *srim, TLorentzVector particle_vec, double VTX[3
 	    end_c = std::vector<int>{(int)(cluster_pos[1]*cmTomm/0.4), (int)(drift_time/10.)};
 //	  } // end of if(ele_e...
 	} // end of for(int ie_sub...
-      } // end of if(drift->Ava...
+//      } // end of if(drift->Ava...
 
       ie+=add_ele;
     } // end of while(ne...
@@ -705,19 +703,17 @@ int mktrack::ShowTeacherValues(std::ostream& os, int exist)
 void mktrack::ElectronDrift(double cluster_pos1, double cluster_pos2, double cluster_pos3, double cluster_pos0,
 			double &ele_end_pos1, double &ele_end_pos2, double &ele_end_pos3, double &ele_end_pos0)
 {
-  double umTocm = 0.0001;
+  double drift_len = cluster_pos2-0;
+  double sigma_tra = diff_tra*sqrt(drift_len);
+  double sigma_long = diff_long*sqrt(drift_len);
 
-  double drift_len = cluster_pos2;
-  double sigma_tra = diff_tra*sqrt(drift_len)*umTocm;
-  double sigma_long = diff_long*sqrt(drift_len)*umTocm;
-
-  ele_end_pos0 = (drift_len+rndm->Gaus(0, sigma_long))/driftv*100.0;
+  ele_end_pos0 = (drift_len+rndm->Gaus(0, sigma_long))/(driftv); // ns
   if(ele_end_pos0<0){
     ele_end_pos0 = 0;
   }
-  ele_end_pos1 = cluster_pos1+rndm->Gaus(0, sigma_tra);
+  ele_end_pos1 = cluster_pos1+rndm->Gaus(0, sigma_tra); // cm
   ele_end_pos2 = 0;
-  ele_end_pos3 = cluster_pos3+rndm->Gaus(0, sigma_tra);
+  ele_end_pos3 = cluster_pos3+rndm->Gaus(0, sigma_tra); // cm
   
   return;
 }
