@@ -444,10 +444,11 @@ int mktrack::Generate(int &status)
 		    event->GetParticleVector(i_particle).Pz()/dr};
 
     if(particle_flag[event_id][i_particle] &&
-       r>5 &&
-       (r*dx[0]+vtx[0]<area[0][0] || r*dx[0]+vtx[0]>area[0][1] ||
-	r*dx[1]+vtx[1]<area[1][0] || r*dx[1]+vtx[1]>area[1][1] ||
-	r*dx[2]+vtx[2]<area[2][0] || r*dx[2]+vtx[2]>area[2][1])){
+       ((r*dx[0]+vtx[0]<area[0][0] || r*dx[0]+vtx[0]>area[0][1] ||
+	 r*dx[1]+vtx[1]<area[1][0] || r*dx[1]+vtx[1]>area[1][1] ||
+	 r*dx[2]+vtx[2]<area[2][0] || r*dx[2]+vtx[2]>area[2][1])||
+	r<10)
+       ){
       return 0;
     }
   }
