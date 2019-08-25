@@ -78,7 +78,7 @@ void mktrack::SetParameters(int Event_id, int Pressure)
   Charge_CO2 = 22.;
   Charge_He = 2.;
   density = (1.1647e-4)*pressure/500.;
-  Cluster_Size = 20; // default is 30
+  Cluster_Size = 1; // default is 30
   Beam_Cluster_Size = 1;
   Particle_Cluster_Size = 20;
   // detector parameters
@@ -104,7 +104,7 @@ void mktrack::SetParameters(int Event_id, int Pressure)
   beam_area[0][1] = 102.4;
   beam_area[1][1] = 140.;
   beam_area[2][1] = 150.;
-  gain = 1000.; // default is 1000.
+  gain = 300.; // default is 1000.
   ie_step = 1; // default is 100
 
   cmTomm = 10.;
@@ -447,7 +447,7 @@ int mktrack::Generate(int &status)
        ((r*dx[0]+vtx[0]<area[0][0] || r*dx[0]+vtx[0]>area[0][1] ||
 	 r*dx[1]+vtx[1]<area[1][0] || r*dx[1]+vtx[1]>area[1][1] ||
 	 r*dx[2]+vtx[2]<area[2][0] || r*dx[2]+vtx[2]>area[2][1])||
-	r<10)
+	r<40)
        ){
       return 0;
     }
