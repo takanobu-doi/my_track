@@ -414,72 +414,21 @@ int mktrack::Generate(int &status)
   ClearBuffer();
 
   status = 1;
-  event->Generate();
 
-  vtx[0] = rndm->Gaus(VTX_X_MEAN, VTX_X_SIGMA);
-//  vtx[1] = rndm->Gaus(VTX_Y_MEAN, VTX_Y_SIGMA);
-  vtx[1] = rndm->Uniform(VTX_Y_START, VTX_Z_STOP);
-  vtx[2] = rndm->Uniform(VTX_Z_START, VTX_Z_STOP);
+  vtx[0] = 102.4/2;
+  vtx[1] = 140/2.;
+  vtx[2] = -10.;
   start_point[0] = vtx[0];
   start_point[1] = vtx[1];
   start_point[2] = 105.;
   beam_area[2][0] = vtx[2];
   
-//  if(event->GetParticleVector(1).Theta()>92.*TMath::DegToRad()){
-//    return 0;
-//  }
-
-  // judge if particle is stopped inside
-  for(unsigned int i_particle=1;i_particle<event->GetParticleNumber();i_particle++){
-    if(EnetoRange[i_particle]==nullptr){
-      continue;
-    }
-    double r = EnetoRange[i_particle]->Eval((event->GetParticleVector(i_particle).E()-
-					     event->GetParticleVector(i_particle).M())*1000.);
-    double dr = TMath::Sqrt(event->GetParticleVector(i_particle).Px()*event->GetParticleVector(i_particle).Px()+
-			    event->GetParticleVector(i_particle).Py()*event->GetParticleVector(i_particle).Py()+
-			    event->GetParticleVector(i_particle).Pz()*event->GetParticleVector(i_particle).Pz());
-    double dx[3] = {event->GetParticleVector(i_particle).Px()/dr,
-		    event->GetParticleVector(i_particle).Py()/dr,
-		    event->GetParticleVector(i_particle).Pz()/dr};
-
-    if(particle_flag[event_id][i_particle] &&
-       ((r*dx[0]+vtx[0]<area[0][0] || r*dx[0]+vtx[0]>area[0][1] ||
-	 r*dx[1]+vtx[1]<area[1][0] || r*dx[1]+vtx[1]>area[1][1] ||
-	 r*dx[2]+vtx[2]<area[2][0] || r*dx[2]+vtx[2]>area[2][1])||
-	r<40)
-       ){
-      return 0;
-    }
-  }
-
   status = 2;
   // beam track
-  GenTrack(srim_beam, event->GetBeamVector(), start_point, beam_area, -1);
   point.clear();
   range.clear();
+  GenTrack(srim_beam, event->GetBeamVector(), start_point, beam_area, -1);
 
-  // other particles track
-  for(unsigned int i_particle=0;i_particle<event->GetParticleNumber();i_particle++){
-    if(srim_particle[i_particle]==nullptr){
-      continue;
-    }
-    if(GenTrack(srim_particle[i_particle], event->GetParticleVector(i_particle), vtx, area, i_particle)==0){
-      if(i_particle==0){
-	point.clear();
-	range.clear();
-      }else if(particle_flag[event_id][i_particle]){
-	return 0;
-      }else{
-	continue;
-      }
-    }
-  } // end of for(int i_part...
-
-//  if(point.size()!=event->GetParticleNumber()-1 || range.size()!=event->GetParticleNumber()-1){
-//    return 0;
-//  }
-  
   return 1;
 }
 
