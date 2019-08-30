@@ -34,6 +34,7 @@ public:
   int SetDriftFile();
   void SetParameters(int, int);
   std::vector<std::string> GetParticleName();
+  int ModTrack();
   double GetFlush(int, int, int);
   int GetTOT(int, int, int);
   int DefineDetector();
@@ -119,6 +120,9 @@ private:
   double driftv;
   double diff_long;
   double diff_tra;
+
+  // triger modify
+  int buff;
 };
 
 #endif

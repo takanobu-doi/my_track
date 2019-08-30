@@ -110,6 +110,8 @@ void mktrack::SetParameters(int Event_id, int Pressure)
   cmTomm = 10.;
   mmTocm = 0.1;
   threshold = 1.; // default is 1.0
+
+  buff = 30;
   return;
 }
 
@@ -417,8 +419,8 @@ int mktrack::Generate(int &status)
   event->Generate();
 
   vtx[0] = rndm->Gaus(VTX_X_MEAN, VTX_X_SIGMA);
-//  vtx[1] = rndm->Gaus(VTX_Y_MEAN, VTX_Y_SIGMA);
-  vtx[1] = rndm->Uniform(VTX_Y_START, VTX_Z_STOP);
+  vtx[1] = rndm->Gaus(VTX_Y_MEAN, VTX_Y_SIGMA);
+//  vtx[1] = rndm->Uniform(VTX_Y_START, VTX_Z_STOP);
   vtx[2] = rndm->Uniform(VTX_Z_START, VTX_Z_STOP);
   start_point[0] = vtx[0];
   start_point[1] = vtx[1];
@@ -479,7 +481,10 @@ int mktrack::Generate(int &status)
 //  if(point.size()!=event->GetParticleNumber()-1 || range.size()!=event->GetParticleNumber()-1){
 //    return 0;
 //  }
-  
+
+  // modify triger timing
+  ModTrack();
+
   return 1;
 }
 
@@ -574,6 +579,48 @@ int mktrack::GenTrack(TrackSrim *srim, TLorentzVector particle_vec, double VTX[3
 			      (VTX[1]-cluster_pos[2])*(VTX[1]-cluster_pos[2])+
 			      (VTX[2]-cluster_pos[3])*(VTX[2]-cluster_pos[3])));
   return 1;
+}
+
+int mktrack::ModTrack()
+{
+  int triger = 0;
+  for(int jj=0;jj<1024;jj++){
+    for(int kk=0;kk<256;kk++){
+      if(flush[0][jj][kk]>threshold){
+	triger = jj;
+	break;
+      }
+    }
+    if(triger!=0){
+      break;
+    }
+  }
+
+  if(triger>buff){
+    for(int ii=0;ii<2;ii++){
+      for(int kk=0;kk<256;kk++){
+	for(int jj=0;jj<1024-triger+buff;jj++){
+	  flush[ii][jj][kk] = flush[ii][jj+triger-buff][kk];
+	}
+	for(int jj=1024-triger+buff;jj<1024;jj++){
+	  flush[ii][jj][kk] = 0;
+	}
+      }
+    }
+  }else{
+    for(int ii=0;ii<2;ii++){
+      for(int kk=0;kk<256;kk++){
+	for(int jj=1023;jj>=buff-triger;jj--){
+	  flush[ii][jj][kk] = flush[ii][jj-buff+triger][kk];
+	}
+	for(int jj=buff-triger-1;jj>=0;jj--){
+	  flush[ii][jj][kk] = 0;
+	}
+      }
+    }
+  }
+  
+  return 0;
 }
 
 double mktrack::GetFlush(int ii, int jj, int kk)
