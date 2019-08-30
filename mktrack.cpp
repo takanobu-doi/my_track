@@ -64,7 +64,7 @@ void mktrack::SetParameters(int Event_id, int Pressure)
   beam_energy = 750; // [MeV]
   VTX_X_MEAN = 102.4/2.;
   VTX_X_SIGMA = 0.1;
-  VTX_Y_MEAN = 55.;
+  VTX_Y_MEAN = 140./2.;
   VTX_Y_SIGMA = 0.1;
   VTX_Y_START = 140.*1/8.;
   VTX_Y_STOP = 140.*7/8;
