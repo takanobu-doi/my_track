@@ -64,7 +64,7 @@ void mktrack::SetParameters(int Event_id, int Pressure)
   beam_energy = 750; // [MeV]
   VTX_X_MEAN = 102.4/2.;
   VTX_X_SIGMA = 0.1;
-  VTX_Y_MEAN = 55.;
+  VTX_Y_MEAN = 140./2.;
   VTX_Y_SIGMA = 0.1;
   VTX_Y_START = 140.*1/8.;
   VTX_Y_STOP = 140.*7/8;
@@ -417,8 +417,8 @@ int mktrack::Generate(int &status)
   event->Generate();
 
   vtx[0] = rndm->Gaus(VTX_X_MEAN, VTX_X_SIGMA);
-//  vtx[1] = rndm->Gaus(VTX_Y_MEAN, VTX_Y_SIGMA);
-  vtx[1] = rndm->Uniform(VTX_Y_START, VTX_Z_STOP);
+  vtx[1] = rndm->Gaus(VTX_Y_MEAN, VTX_Y_SIGMA);
+//  vtx[1] = rndm->Uniform(VTX_Y_START, VTX_Z_STOP);
   vtx[2] = rndm->Uniform(VTX_Z_START, VTX_Z_STOP);
   start_point[0] = vtx[0];
   start_point[1] = vtx[1];
