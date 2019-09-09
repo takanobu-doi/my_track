@@ -73,7 +73,7 @@ gen_eve::gen_eve(std::string BEAM_NAME, std::string TARGET_NAME, std::vector<std
     }
     mass.push_back(dataset.get_mass(A, particle_name.c_str())/1000.);
   }
-  
+  mass[0] = mass[0]+0.002;
   E_beam = T_beam/1000.+mass_beam; // total energy of incident particle [GeV]
   P_beam = TMath::Sqrt(E_beam*E_beam-mass_beam*mass_beam); // P [GeV/c]
   beam = TLorentzVector(0., 0., -P_beam, E_beam); // assume z-axis direction

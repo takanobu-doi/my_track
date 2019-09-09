@@ -419,8 +419,8 @@ int mktrack::Generate(int &status)
   event->Generate();
 
   vtx[0] = rndm->Gaus(VTX_X_MEAN, VTX_X_SIGMA);
-  vtx[1] = rndm->Gaus(VTX_Y_MEAN, VTX_Y_SIGMA);
-//  vtx[1] = rndm->Uniform(VTX_Y_START, VTX_Z_STOP);
+//  vtx[1] = rndm->Gaus(VTX_Y_MEAN, VTX_Y_SIGMA);
+  vtx[1] = rndm->Uniform(VTX_Y_START, VTX_Z_STOP);
   vtx[2] = rndm->Uniform(VTX_Z_START, VTX_Z_STOP);
   start_point[0] = vtx[0];
   start_point[1] = vtx[1];
@@ -502,7 +502,7 @@ int mktrack::GenTrack(TrackSrim *srim, TLorentzVector particle_vec, double VTX[3
 
   double t_0 = 0.;
 
-  std::vector<std::vector<int>> temp_point;
+  std::vector<std::vector<double>> temp_point;
   
   if(!srim->NewTrack(VTX[0]*mmTocm, VTX[1]*mmTocm, VTX[2]*mmTocm, t_0,
 		     particle_vec.Px(), particle_vec.Py(), particle_vec.Pz())){
@@ -518,7 +518,7 @@ int mktrack::GenTrack(TrackSrim *srim, TLorentzVector particle_vec, double VTX[3
   double ekin;
   int first_flag = 1;
   double drift_time = 0;
-  std::vector<int> sca_a, sca_c, end_a, end_c;
+  std::vector<double> sca_a, sca_c, end_a, end_c;
   
   while(srim->GetCluster(cluster_pos[1], cluster_pos[2], cluster_pos[3], cluster_pos[0],
 			 ne, ec, ekin)){
@@ -556,12 +556,12 @@ int mktrack::GenTrack(TrackSrim *srim, TLorentzVector particle_vec, double VTX[3
 	    drift_time = (ele_end_pos[0]-cluster_pos[0]);
 	    AddRawWave(ele_end_pos, drift_time, add_ele);
 	    if(first_flag){
-	      sca_a = std::vector<int>{(int)(cluster_pos[3]*cmTomm/0.4), (int)(drift_time/10.)};
-	      sca_c = std::vector<int>{(int)(cluster_pos[1]*cmTomm/0.4), (int)(drift_time/10.)};
+	      sca_a = std::vector<double>{(cluster_pos[3]*cmTomm/0.4), (drift_time/10.)};
+	      sca_c = std::vector<double>{(cluster_pos[1]*cmTomm/0.4), (drift_time/10.)};
 	      first_flag = 0;
 	    } // end of if(first...
-	    end_a = std::vector<int>{(int)(cluster_pos[3]*cmTomm/0.4), (int)(drift_time/10.)};
-	    end_c = std::vector<int>{(int)(cluster_pos[1]*cmTomm/0.4), (int)(drift_time/10.)};
+	    end_a = std::vector<double>{(cluster_pos[3]*cmTomm/0.4), (drift_time/10.)};
+	    end_c = std::vector<double>{(cluster_pos[1]*cmTomm/0.4), (drift_time/10.)};
 //	  } // end of if(ele_e...
 	} // end of for(int ie_sub...
 //      } // end of if(drift->Ava...

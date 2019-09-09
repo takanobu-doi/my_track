@@ -113,7 +113,7 @@ private:
   double mmTocm;
   double threshold;
 
-  std::vector<std::vector<std::vector<int>>> point;
+  std::vector<std::vector<std::vector<double>>> point;
   std::vector<double> range;
 
   //*** dirft paraeters ***//
