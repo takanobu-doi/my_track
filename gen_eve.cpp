@@ -10,7 +10,7 @@
 #include "database.hpp"
 
 gen_eve::gen_eve(std::string BEAM_NAME, std::string TARGET_NAME, std::vector<std::string> PARTICLE_NAME,
-		 double T_beam/*[MeV]*/)
+		 double T_beam/*[MeV]*/, double EX_MIN, double EX_MAX)
 {
   // get paticle imformation
   database dataset;
@@ -73,12 +73,15 @@ gen_eve::gen_eve(std::string BEAM_NAME, std::string TARGET_NAME, std::vector<std
     }
     mass.push_back(dataset.get_mass(A, particle_name.c_str())/1000.);
   }
-  mass[0] = mass[0]+0.02;
+  mass[0] = mass[0];
   E_beam = T_beam/1000.+mass_beam; // total energy of incident particle [GeV]
   P_beam = TMath::Sqrt(E_beam*E_beam-mass_beam*mass_beam); // P [GeV/c]
   beam = TLorentzVector(0., 0., -P_beam, E_beam); // assume z-axis direction
   target = TLorentzVector(0., 0., 0., mass_target);
   W = beam+target;
+
+  Ex_min = EX_MIN;
+  Ex_max = EX_MAX;
 
   event = new TGenPhaseSpace();
   rndm = new TRandom3();
@@ -98,6 +101,9 @@ void gen_eve::Generate()
   double weight_max = 10;
 
   particles.clear();
+
+  double Ex = rndm->Uniform(Ex_min, Ex_max);
+  mass[0] = mass[0]+Ex;
 
   event->SetDecay(W, mass.size(), mass.data());
   do{

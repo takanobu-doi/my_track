@@ -11,7 +11,7 @@
 class gen_eve
 {
 public:
-  gen_eve(std::string, std::string, std::vector<std::string>, double);
+  gen_eve(std::string, std::string, std::vector<std::string>, double, double, double);
   ~gen_eve();
   void Generate();
   double GetBeamMass();
@@ -24,6 +24,8 @@ private:
   double P_beam;
   double mass_beam;
   double mass_target;
+  double Ex_min;
+  double Ex_max;
   std::vector<double> mass;
   TLorentzVector beam;
   TLorentzVector target;

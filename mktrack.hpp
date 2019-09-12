@@ -71,6 +71,8 @@ private:
   int event_id;
   int pressure;
   double beam_energy;
+  double Ex_min;
+  double Ex_max;
   double VTX_X_MEAN;
   double VTX_X_SIGMA;
   double VTX_Y_MEAN;
