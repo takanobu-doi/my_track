@@ -419,8 +419,8 @@ int mktrack::Generate(int &status)
   event->Generate();
 
   vtx[0] = rndm->Gaus(VTX_X_MEAN, VTX_X_SIGMA);
-  vtx[1] = rndm->Gaus(VTX_Y_MEAN, VTX_Y_SIGMA);
-//  vtx[1] = rndm->Uniform(VTX_Y_START, VTX_Z_STOP);
+//  vtx[1] = rndm->Gaus(VTX_Y_MEAN, VTX_Y_SIGMA);
+  vtx[1] = rndm->Uniform(VTX_Y_START, VTX_Z_STOP);
   vtx[2] = rndm->Uniform(VTX_Z_START, VTX_Z_STOP);
   start_point[0] = vtx[0];
   start_point[1] = vtx[1];
@@ -482,16 +482,16 @@ int mktrack::Generate(int &status)
 //    return 0;
 //  }
 
-  // modify triger timing
-  int shifted = ModTrack();
-
-  // modify labeled point "y-shifted"
-  for(unsigned int i=0;i<point.size();i++){
-    point[i][0][1] = point[i][0][1]-shifted;
-    point[i][1][1] = point[i][1][1]-shifted;
-    point[i][2][1] = point[i][2][1]-shifted;
-    point[i][3][1] = point[i][3][1]-shifted;
-  }
+//  // modify triger timing
+//  int shifted = ModTrack();
+//
+//  // modify labeled point "y-shifted"
+//  for(unsigned int i=0;i<point.size();i++){
+//    point[i][0][1] = point[i][0][1]-shifted;
+//    point[i][1][1] = point[i][1][1]-shifted;
+//    point[i][2][1] = point[i][2][1]-shifted;
+//    point[i][3][1] = point[i][3][1]-shifted;
+//  }
 
   return 1;
 }
