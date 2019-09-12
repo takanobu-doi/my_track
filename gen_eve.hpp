@@ -13,7 +13,7 @@ class gen_eve
 public:
   gen_eve(std::string, std::string, std::vector<std::string>, double, double, double);
   ~gen_eve();
-  void Generate();
+  double Generate();
   double GetBeamMass();
   double GetParticleMass(int);
   TLorentzVector GetBeamVector();

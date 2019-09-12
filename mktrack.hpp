@@ -38,7 +38,7 @@ public:
   double GetFlush(int, int, int);
   int GetTOT(int, int, int);
   int DefineDetector();
-  int Generate(int&);
+  int Generate(int&, double&);
   int GenTrack(TrackSrim*, TLorentzVector, double[3], double[3][2], int);
   void ClearBuffer();
   void AddRawWave(double [], double, int);

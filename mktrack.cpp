@@ -155,10 +155,10 @@ mktrack::mktrack(int Event_id, int Pressure)
 
   std::vector<double> ch(256);
   std::vector<std::vector<double>> clk;
-  for(int ii=0;ii!=1024;++ii){
+  for(int ii=0;ii<1024;++ii){
     clk.push_back(ch);
   }
-  for(int ii=0;ii!=2;++ii){
+  for(int ii=0;ii<2;++ii){
     flush.push_back(clk);
   }
 }
@@ -337,7 +337,7 @@ int mktrack::SetDriftFile()
   double attach[efields.size()];
 
   unsigned int i=0;
-  for(i=0;i!=efields.size();++i){
+  for(i=0;i<efields.size();++i){
     gas->GetElectronVelocityE(i, 0, 0, velocity[i]); // cm/ns
     gas->GetElectronTransverseDiffusion(i, 0, 0, diff_t[i]); // sqrt(cm)
     gas->GetElectronLongitudinalDiffusion(i, 0, 0, diff_l[i]); // sqrt(cm)
@@ -414,12 +414,12 @@ std::vector<std::string> mktrack::GetParticleName()
   return *(particle_name.begin()+event_id);
 }
 
-int mktrack::Generate(int &status)
+int mktrack::Generate(int &status, double &ex)
 {
   ClearBuffer();
 
   status = 1;
-  event->Generate();
+  ex = event->Generate();
 
   vtx[0] = rndm->Gaus(VTX_X_MEAN, VTX_X_SIGMA);
 //  vtx[1] = rndm->Gaus(VTX_Y_MEAN, VTX_Y_SIGMA);
@@ -435,7 +435,7 @@ int mktrack::Generate(int &status)
 //  }
 
   // judge if particle is stopped inside
-  for(unsigned int i_particle=1;i_particle!=event->GetParticleNumber();++i_particle){
+  for(unsigned int i_particle=1;i_particle<event->GetParticleNumber();++i_particle){
     if(EnetoRange[i_particle]==nullptr){
       continue;
     }
@@ -465,7 +465,7 @@ int mktrack::Generate(int &status)
   range.clear();
 
   // other particles track
-  for(unsigned int i_particle=0;i_particle!=event->GetParticleNumber();++i_particle){
+  for(unsigned int i_particle=0;i_particle<event->GetParticleNumber();++i_particle){
     if(srim_particle[i_particle]==nullptr){
       continue;
     }
@@ -548,7 +548,7 @@ int mktrack::GenTrack(TrackSrim *srim, TLorentzVector particle_vec, double VTX[3
 //      if(drift->AvalancheElectron(cluster_pos[1], cluster_pos[2], cluster_pos[3], cluster_pos[0])){
 //	int ne_sub = drift->GetNumberOfElectronEndpoints();
       int ne_sub = 1;
-	for(int ie_sub=0;ie_sub!=ne_sub;++ie_sub){
+	for(int ie_sub=0;ie_sub<ne_sub;++ie_sub){
 //	  drift->GetElectronEndpoint(ie_sub,
 //				     cluster_pos[1], cluster_pos[2], cluster_pos[3], cluster_pos[0],
 //				     ele_end_pos[1], ele_end_pos[2], ele_end_pos[3], ele_end_pos[0],
@@ -595,8 +595,8 @@ int mktrack::GenTrack(TrackSrim *srim, TLorentzVector particle_vec, double VTX[3
 int mktrack::ModTrack()
 {
   int triger = 0;
-  for(int jj=0;jj!=1024;++jj){
-    for(int kk=0;kk!=256;++kk){
+  for(int jj=0;jj<1024;++jj){
+    for(int kk=0;kk<256;++kk){
       if(flush[0][jj][kk]>threshold){
 	triger = jj;
 	break;
@@ -650,9 +650,9 @@ int mktrack::GetTOT(int ii, int jj, int kk)
 
 void mktrack::ClearBuffer()
 {
-  for(int ii=0;ii!=2;++ii){
-    for(int jj=0;jj!=1024;++jj){
-      for(int kk=0;kk!=256;++kk){
+  for(int ii=0;ii<2;++ii){
+    for(int jj=0;jj<1024;++jj){
+      for(int kk=0;kk<256;++kk){
 	flush[ii][jj][kk] = 0;
       }
     }
@@ -678,11 +678,11 @@ void mktrack::AddRawWave(double ele_end_pos[], double drift_time, int ne)
   min_height = wave->Eval(0)*ne*gain;
   temp_height = wave->Eval(-drift_time)*ne*gain;
 //  temp_height = 0;
-  for(int ac=0;ac!=2;++ac){
+  for(int ac=0;ac<2;++ac){
     break_flag = 0;
     max_flag = 0;
     if(strp[ac]>=0 && strp[ac]<256){
-      for(int clk=0;clk!=1024;++clk){
+      for(int clk=0;clk<1024;++clk){
 	ns = clk*10.0;
 	pulse_height = wave->Eval(ns-drift_time)*ne*gain;
 	
@@ -716,7 +716,7 @@ int mktrack::ShowIdealValues(std::ostream& os, int exist)
     }
     os << std::endl;
   }
-  for(unsigned int i=0;i!=event->GetParticleNumber();++i){
+  for(unsigned int i=0;i<event->GetParticleNumber();++i){
     os << event->GetParticleVector(i).E()*1000 << " "
        << event->GetParticleVector(i).M()*1000 << " "
        << event->GetParticleVector(i).Phi() << " "
@@ -736,14 +736,14 @@ int mktrack::ShowTeacherValues(std::ostream& os, int exist)
 //      os << "sca_a_x sca_a_y sca_c_x sca_c_y end_a_x end_a_y end_c_x end_c_y [pixel]";
 //    }
 //    os << std::endl;
-    for(unsigned int i=0;i!=range.size();++i){
+    for(unsigned int i=0;i<range.size();++i){
       os << "range" << i+3 << "[mm] phi" << i+3 << "[rad] theta" << i+3 << "[rad] ";
       os << "sca_a_x sca_a_y sca_c_x sca_c_y end_a_x end_a_y end_c_x end_c_y [pixel]";
     }
     os << std::endl;
   }
 //  for(unsigned int i=0;i<event->GetParticleNumber()-1;i++){
-  for(unsigned int i=0;i!=range.size();++i){
+  for(unsigned int i=0;i<range.size();++i){
     os << range[i] << " " << std::flush;
     os << event->GetParticleVector(i).Phi() << " " << std::flush;
     os << event->GetParticleVector(i).Theta() << " " << std::flush;

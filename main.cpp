@@ -9,7 +9,7 @@
 #include "mktrack.hpp"
 
 int check_cmd(int argc, char *argv[], std::vector<std::string> reaction, unsigned int &event_num, std::string &fname, int &scatter, int &pressure);
-void show_progress(int &sum_num, unsigned int event_num, int &status);
+void show_progress(int &sum_num, unsigned int event_num, int &status, double &Ex);
 
 int main(int argc, char *argv[]){
 
@@ -71,6 +71,7 @@ int main(int argc, char *argv[]){
   int tot_num;
   int event_num_temp = event_num;
   int status = 0;
+  double Ex = 0;
 //  for(int ii=0;ii<ths.size();ii++){
   for(auto itr=ths.begin();itr!=ths.end();++itr){
 //    std::cerr << ii << std::endl;
@@ -82,7 +83,7 @@ int main(int argc, char *argv[]){
     }
 
     // generate events by multi threads
-    *itr = std::thread([&mtx, &flush_out, &tot_out, &idealvalue_out, &teachervalue_out, &exist_ideal, &exist_teacher, &sum_num, &status](int scatter, int pressure, int tot_num){
+    *itr = std::thread([&mtx, &flush_out, &tot_out, &idealvalue_out, &teachervalue_out, &exist_ideal, &exist_teacher, &sum_num, &status, &Ex](int scatter, int pressure, int tot_num){
 //	std::string fname_2 = "temp_tot_"+std::to_string(ii++)+".dat";
 //	std::ofstream tot_out_2(datdir+fname_2);
 	mtx.lock();
@@ -90,7 +91,7 @@ int main(int argc, char *argv[]){
 	mtx.unlock();
 	for(int num=0;num<tot_num;){
 	  // generate event & get picutres
-	  while(MAIKo.Generate(status)==0){}
+	  while(MAIKo.Generate(status, Ex)==0){}
 	  
 	  mtx.lock();
 	  status = 3;
@@ -121,7 +122,7 @@ int main(int argc, char *argv[]){
       }, scatter, pressure, tot_num);
   }
   std::cout << "\e[?25l" << std::flush; // disappear cursol
-  show_progress(sum_num, event_num, status);
+  show_progress(sum_num, event_num, status, Ex);
       
   for(unsigned int ii=0;ii<ths.size();ii++){
     ths[ii].join();
@@ -227,7 +228,7 @@ int check_cmd(int argc, char *argv[], std::vector<std::string> reaction, unsigne
   return 1;
 }
 
-void show_progress(int &sum_num, unsigned int event_num, int &status)
+void show_progress(int &sum_num, unsigned int event_num, int &status, double &Ex)
 {
   double percent;
   unsigned int max_chr = 50;
@@ -236,6 +237,8 @@ void show_progress(int &sum_num, unsigned int event_num, int &status)
   std::string progress;
   time_t start = time(NULL);
   time_t pass;
+
+  std::cout << std::endl << std::endl;
   
   while(percent!=100){
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
@@ -243,21 +246,24 @@ void show_progress(int &sum_num, unsigned int event_num, int &status)
     std::cout << "Status: ";
     switch(status){
     case 0:
-      std::cout << "ready to generate track" << std::endl;
+      std::cout << "ready to generate track";
       break;
     case 1:
-      std::cout << "generating event" << std::endl;
+      std::cout << "generating event       ";
       break;
     case 2:
-      std::cout << "generating track" << std::endl;
+      std::cout << "generating track       ";
       break;
     case 3:
-      std::cout << "outputing to file" << std::endl;
+      std::cout << "outputing to file      ";
       break;
     default:
-      std::cout << "unknown" << std::endl;
+      std::cout << "unknown                ";
       break;
     }
+
+    std::cout << "(Ex = " << std::setfill(' ') << std::setw(6) << std::right << Ex;
+    std::cout << std::setfill(' ') << std::setw(10) << std::left << " MeV)" << std::endl;
 
     progress = "";
     percent = (sum_num*100)/(double)event_num;

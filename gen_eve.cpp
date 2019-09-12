@@ -94,7 +94,7 @@ gen_eve::~gen_eve()
   delete rndm;
 }
 
-void gen_eve::Generate()
+double  gen_eve::Generate()
 {
   double weight;
   double uniform_rndm;
@@ -103,7 +103,7 @@ void gen_eve::Generate()
   particles.clear();
 
   double Ex = rndm->Uniform(Ex_min, Ex_max);
-  mass[0] = mass[0]+Ex;
+  mass[0] = mass[0]+Ex/1000.;
 
   event->SetDecay(W, mass.size(), mass.data());
   do{
@@ -116,7 +116,9 @@ void gen_eve::Generate()
     particles.push_back(*event->GetDecay(ii));
   }
 
-  return;
+  mass[0] = mass[0]-Ex/1000.;
+
+  return Ex;
 }
 
 double gen_eve::GetBeamMass()
