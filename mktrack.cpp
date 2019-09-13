@@ -423,7 +423,7 @@ int mktrack::Generate(int &status, double &ex)
 
   vtx[0] = rndm->Gaus(VTX_X_MEAN, VTX_X_SIGMA);
 //  vtx[1] = rndm->Gaus(VTX_Y_MEAN, VTX_Y_SIGMA);
-  vtx[1] = rndm->Uniform(VTX_Y_START, VTX_Z_STOP);
+  vtx[1] = rndm->Uniform(VTX_Y_START, VTX_Y_STOP);
   vtx[2] = rndm->Uniform(VTX_Z_START, VTX_Z_STOP);
   start_point[0] = vtx[0];
   start_point[1] = vtx[1];
