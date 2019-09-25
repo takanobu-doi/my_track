@@ -765,8 +765,10 @@ void mktrack::ElectronDrift(double cluster_pos1, double cluster_pos2, double clu
 			double &ele_end_pos1, double &ele_end_pos2, double &ele_end_pos3, double &ele_end_pos0)
 {
   double drift_len = cluster_pos2-0;
-  double sigma_tra = diff_tra*sqrt(drift_len);
-  double sigma_long = diff_long*sqrt(drift_len);
+//  double sigma_tra = diff_tra*sqrt(drift_len);
+//  double sigma_long = diff_long*sqrt(drift_len);
+  double sigma_tra = 0.08; // [cm]
+  double sigma_long = 0.08; // [cm]
 
   ele_end_pos0 = (drift_len+rndm->Gaus(0, sigma_long))/(driftv); // ns
   if(ele_end_pos0<0){
