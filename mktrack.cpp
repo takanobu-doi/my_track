@@ -107,7 +107,7 @@ void mktrack::SetParameters(int Event_id, int Pressure)
   beam_area[1][1] = 140.;
   beam_area[2][1] = 150.;
   gain = 300.; // default is 1000.
-  ie_step = 1; // default is 100
+  ie_step = 1; // default is Cluster_Size
 
   cmTomm = 10.;
   mmTocm = 0.1;
@@ -386,6 +386,8 @@ int mktrack::DefineDetector()
 		  center[0]+half[0], center[1]+half[1], center[2]+half[2]);
   drift = new AvalancheMC();
   drift->SetSensor(sensor);
+  drift->SetTimeSteps(1.); // time step for drifting electron [ns]
+  drift->SetDistanceSteps(0.1); // distance step for drifting electron [cm]
 
   return 1;
 }
@@ -515,6 +517,7 @@ int mktrack::GenTrack(TrackSrim *srim, TLorentzVector particle_vec, double VTX[3
   int n_cluster = 0;
   int tot_ne = 0;
   double cluster_pos[4];
+  double ele_sta_pos[4];
   double ele_end_pos[4];
   int ne;
   double ec;
@@ -533,7 +536,7 @@ int mktrack::GenTrack(TrackSrim *srim, TLorentzVector particle_vec, double VTX[3
     n_cluster++;
     tot_ne+=ne;
     
-//    int drift_status;
+    int drift_status;
     int add_ele;
     int ie = 0;
 
@@ -544,30 +547,27 @@ int mktrack::GenTrack(TrackSrim *srim, TLorentzVector particle_vec, double VTX[3
       }else{
 	add_ele = ie_step;
       }
-      
-//      if(drift->AvalancheElectron(cluster_pos[1], cluster_pos[2], cluster_pos[3], cluster_pos[0])){
-//	int ne_sub = drift->GetNumberOfElectronEndpoints();
-      int ne_sub = 1;
-	for(int ie_sub=0;ie_sub<ne_sub;++ie_sub){
-//	  drift->GetElectronEndpoint(ie_sub,
-//				     cluster_pos[1], cluster_pos[2], cluster_pos[3], cluster_pos[0],
-//				     ele_end_pos[1], ele_end_pos[2], ele_end_pos[3], ele_end_pos[0],
-//				     drift_status);
-	  ElectronDrift(cluster_pos[1], cluster_pos[2], cluster_pos[3], cluster_pos[0],
-			ele_end_pos[1], ele_end_pos[2], ele_end_pos[3], ele_end_pos[0]);
-//	  if(ele_end_pos[2]<0 && drift_status==-5){
-	    drift_time = (ele_end_pos[0]-cluster_pos[0]);
-	    AddRawWave(ele_end_pos, drift_time, add_ele);
-	    if(first_flag){
-	      sca_a = std::vector<double>{(cluster_pos[3]*cmTomm/0.4), (drift_time/10.)};
-	      sca_c = std::vector<double>{(cluster_pos[1]*cmTomm/0.4), (drift_time/10.)};
-	      first_flag = 0;
-	    } // end of if(first...
-	    end_a = std::vector<double>{(cluster_pos[3]*cmTomm/0.4), (drift_time/10.)};
-	    end_c = std::vector<double>{(cluster_pos[1]*cmTomm/0.4), (drift_time/10.)};
-//	  } // end of if(ele_e...
-	} // end of for(int ie_sub...
-//      } // end of if(drift->Ava...
+
+      // start to drift electrons
+      drift->DriftElectron(cluster_pos[1], cluster_pos[2], cluster_pos[3], cluster_pos[0]);
+
+      for(unsigned int ie_sub=0; ie_sub!=drift->GetNumberOfElectronEndpoints(); ++ie_sub){
+	drift->GetElectronEndpoint(ie_sub,
+			   ele_sta_pos[1], ele_sta_pos[2], ele_sta_pos[3], ele_sta_pos[0],
+			   ele_end_pos[1], ele_end_pos[2], ele_end_pos[3], ele_end_pos[0],
+			   drift_status);
+	
+	drift_time = (ele_end_pos[0]-ele_sta_pos[0]);
+	
+	AddRawWave(ele_end_pos, drift_time, add_ele);
+	if(first_flag){
+	  sca_a = std::vector<double>{(ele_end_pos[3]*cmTomm/0.4), (drift_time/10.)};
+	  sca_c = std::vector<double>{(ele_end_pos[1]*cmTomm/0.4), (drift_time/10.)};
+	  first_flag = 0;
+	} // end of if(first...
+      } // end of for(int ie_sub...
+      end_a = std::vector<double>{(ele_end_pos[3]*cmTomm/0.4), (drift_time/10.)};
+      end_c = std::vector<double>{(ele_end_pos[1]*cmTomm/0.4), (drift_time/10.)};
 
       ie+=add_ele;
     } // end of while(ne...
